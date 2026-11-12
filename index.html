@@ -158,7 +158,7 @@ select,input[type=search]{font:inherit;font-size:14.5px;color:var(--fg);backgrou
 .foot h3{margin:0 0 3px;font-size:12.5px;color:var(--fg);font-weight:700}
 .foot p{margin:0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
-:root{--g1:#BFD8C4;--g2:#6FA07B;--g3:#2E5D3A}
+:root{--g1:#BFD8C4;--g2:#6FA07B;--g3:#2E5D3A;--p1:var(--c2);--p2:var(--c3);--p3:var(--c5)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--g1:#2B4A34;--g2:#4E8C5E;--g3:#A3DAAF}}
 :root[data-theme="dark"]{--g1:#2B4A34;--g2:#4E8C5E;--g3:#A3DAAF}
 .rg.g1{fill:var(--g1)}.rg.g2{fill:var(--g2)}.rg.g3{fill:var(--g3)}
@@ -190,7 +190,15 @@ select,input[type=search]{font:inherit;font-size:14.5px;color:var(--fg);backgrou
 .rgi .rc{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
 .rgi .rm{grid-column:1/-1;font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
 .hintline{font-size:12.5px;color:var(--muted)}
-.mo.bloom .br{background:var(--petal)}
+.mo.bloom .br{background:var(--c3)}
+.mo.bloom[aria-pressed="true"] .br{background:var(--petal)}
+.mo.leaf .br{background:var(--g2)}
+.mo.leaf[aria-pressed="true"] .br{background:var(--g3)}
+.rg.p1{fill:var(--c2)}.rg.p2{fill:var(--c3)}.rg.p3{fill:var(--c5)}
+.bigph .cells i.cur{outline:2px solid var(--fg);outline-offset:1px}
+.state{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:4px 10px;border-radius:999px;justify-self:start}
+.state.on{background:var(--petal-soft);color:var(--petal)}
+.state.off{background:var(--moss-soft);color:var(--moss)}
 .mo.bloom .lb{color:var(--fg)}
 </style>
 
@@ -312,7 +320,7 @@ select,input[type=search]{font:inherit;font-size:14.5px;color:var(--fg);backgrou
     for(const g of M.groups){
       const el=pathEl[g.id]; if(!gsp[g.id]) continue;
       let cls='rg';
-      if(plantMode()){ const ms=gsp[g.id].get(st.sp); const b=ms?gbin(ms.size):0; if(b) cls+=' g'+b; }
+      if(plantMode()){ const ms=gsp[g.id].get(st.sp); const b=ms?gbin(ms.size):0; if(b&&inM(SP[st.sp],st.month)) cls+=' p'+b; if(st.gid&&st.gid!==g.id) cls+=' dim'; }
       else if(st.mode==='month'){ const b=bin(gcount[g.id][st.month]); if(b) cls+=' b'+b; if(st.gid&&st.gid!==g.id) cls+=' dim'; }
       el.setAttribute('class',cls);
     }
@@ -323,7 +331,8 @@ select,input[type=search]{font:inherit;font-size:14.5px;color:var(--fg);backgrou
     const L=$('legend');
     if(plantMode()){
       const n=spRegions(st.sp).length;
-      L.innerHTML=`<span>‘${SP[st.sp][0]}’ 기록된 시·군·구 <b style="color:var(--fg)">${n}곳</b></span><div class="sw">${[1,2,3].map(i=>`<span style="background:var(--g${i})"></span>`).join('')}</div><div class="tk"><span>장소1</span><span>2~3</span><span>4+</span></div>`;
+      const on=inM(SP[st.sp],st.month);
+      L.innerHTML=`<span>‘${SP[st.sp][0]}’ 기록된 시·군·구 <b style="color:var(--fg)">${n}곳</b> · ${st.month}월 <b style="color:${on?'var(--petal)':'var(--moss)'}">${on?'꽃 피는 중':'꽃 시기 아님'}</b></span>${on?`<div class="sw">${[1,2,3].map(i=>`<span style="background:var(--p${i})"></span>`).join('')}</div><div class="tk"><span>장소1</span><span>2~3</span><span>4+</span></div>`:`<span>꽃 피는 달(${per(SP[st.sp])})을 누르면 지도에 나와요</span>`}`;
     } else if(st.mode==='plant'){
       L.innerHTML='<span>식물을 고르면 자라는 곳이 표시돼요</span>';
     } else {
@@ -347,7 +356,7 @@ select,input[type=search]{font:inherit;font-size:14.5px;color:var(--fg);backgrou
     const id=e.target.dataset&&e.target.dataset.id; if(!id||e.pointerType==='touch'){tip.classList.remove('on');return;}
     const g=G[id], r=card.getBoundingClientRect(); let txt;
     if(!gsp[id]) txt=`<b>${g.name}</b> · 분포 기록 없음`;
-    else if(plantMode()){const ms=gsp[id].get(st.sp); txt=`<b>${g.name}</b> · ${ms?`장소 ${ms.size}곳에서 기록`:'기록 없음'}`;}
+    else if(plantMode()){const ms=gsp[id].get(st.sp); txt=`<b>${g.name}</b> · ${ms?`장소 ${ms.size}곳에서 기록${inM(SP[st.sp],st.month)?` · ${st.month}월 꽃 피는 중`:''}`:'기록 없음'}`;}
     else if(st.mode==='plant') txt=`<b>${g.name}</b>`;
     else txt=`<b>${g.name}</b> · ${st.month}월 꽃 ${gcount[id][st.month]}종`;
     tip.innerHTML=txt; tip.style.left=(e.clientX-r.left)+'px'; tip.style.top=(e.clientY-r.top)+'px'; tip.classList.add('on');
@@ -366,17 +375,16 @@ select,input[type=search]{font:inherit;font-size:14.5px;color:var(--fg);backgrou
     const c=st.gid&&st.mode==='month'?gcount[st.gid]:natCount, max=Math.max(1,...c.slice(1));
     const s=plantMode()?SP[st.sp]:null;
     $('months').innerHTML=Array.from({length:12},(_,i)=>{const m=i+1;
-      const bloom=s&&inM(s,m), pressed=!s&&m===st.month;
-      const h=s?(bloom?34:4):Math.max(2,c[m]/max*34);
-      return `<button class="mo${m===NOW?' now':''}${bloom?' bloom':''}" data-m="${m}" aria-pressed="${pressed}" aria-label="${m}월${s?(bloom?', 꽃 피는 달':''):`, ${c[m]}종`}"><span class="bx"><span class="br" style="height:${h}px"></span></span><span class="lb">${m}월</span></button>`}).join('');
+      const bloom=s&&inM(s,m), pressed=m===st.month;
+      const h=s?(bloom?34:6):Math.max(2,c[m]/max*34);
+      return `<button class="mo${m===NOW?' now':''}${s?(bloom?' bloom':' leaf'):''}" data-m="${m}" aria-pressed="${pressed}" aria-label="${m}월${s?(bloom?', 꽃 피는 달':''):`, ${c[m]}종`}"><span class="bx"><span class="br" style="height:${h}px"></span></span><span class="lb">${m}월</span></button>`}).join('');
   }
-  $('months').addEventListener('click',e=>{const b=e.target.closest('.mo'); if(!b) return; stopPlay(); if(st.mode!=='month') setMode('month',true); setMonth(+b.dataset.m);});
+  $('months').addEventListener('click',e=>{const b=e.target.closest('.mo'); if(!b) return; stopPlay(); setMonth(+b.dataset.m);});
   function setMonth(m){st.month=m; st.shown=PAGE; autoMoved=false; render();}
   let timer=null;
   function stopPlay(){if(timer){clearInterval(timer);timer=null;} $('play').setAttribute('aria-pressed','false'); $('playLabel').textContent='1년 재생'; $('playIcon').setAttribute('d','M4 2.5v11l9-5.5z');}
   $('play').onclick=()=>{
     if(timer){stopPlay();return;}
-    if(st.mode!=='month') setMode('month',true);
     $('play').setAttribute('aria-pressed','true'); $('playLabel').textContent='멈춤'; $('playIcon').setAttribute('d','M3.5 2.5h3v11h-3zM9.5 2.5h3v11h-3z');
     setMonth(st.month>=12?1:st.month+1);
     timer=setInterval(()=>{if(st.month>=12){stopPlay();return;} setMonth(st.month+1);},RM?1400:950);
@@ -464,15 +472,16 @@ select,input[type=search]{font:inherit;font-size:14.5px;color:var(--fg);backgrou
       const q=st.pq;
       let list, head;
       if(q){ list=searchPlants(q); head=list.length?`‘${esc(q)}’ 검색 결과 ${list.length}종`:`‘${esc(q)}’에 맞는 식물이 기록에 없어요. 다른 이름으로 찾아보세요.`; }
-      else { list=allSp.slice().sort((a,b)=>(regionCount.get(b)||0)-(regionCount.get(a)||0)); head='전국에서 가장 많이 기록된 식물이에요. 이름을 누르면 자라는 곳이 지도에 나와요.'; }
-      B.innerHTML=`<p class="hintline">${head}</p><div class="list">${list.slice(0,30).map(j=>rowHTML(j,0)).join('')}</div>`;
+      else { list=allSp.filter(j=>inM(SP[j],st.month)).sort((a,b)=>(regionCount.get(b)||0)-(regionCount.get(a)||0)); head=list.length?`${st.month}월에 꽃 피는 식물 가운데 전국에서 많이 기록된 순서예요. 이름을 누르면 자라는 곳이 지도에 나와요.`:`${st.month}월에 꽃 피는 식물 기록이 없어요. 위에서 다른 달을 고르거나 이름으로 찾아보세요.`; }
+      B.innerHTML=`<p class="hintline">${head}</p><div class="list">${list.slice(0,30).map(j=>rowHTML(j,st.month)).join('')}</div>`;
       return;
     }
     const s=SP[st.sp], regs=spRegions(st.sp);
     const places=natSp.get(st.sp)?natSp.get(st.sp).size:0;
     const bySido={}; regs.forEach(g=>(bySido[G[g].sido]=bySido[G[g].sido]||[]).push(g));
     const tags=[s[7]>=200?'<span class="tag t-tree">나무·덩굴</span>':'',s[5]?'<span class="tag t-pro">보호식물</span>':'',s[6]?'<span class="tag t-end">한국 특산</span>':''].join('');
-    const cells=Array.from({length:12},(_,i)=>`<i class="${inM(s,i+1)?'on':''}"></i>`).join('');
+    const cells=Array.from({length:12},(_,i)=>`<i class="${inM(s,i+1)?'on':''}${i+1===st.month?' cur':''}"></i>`).join('');
+    const onNow=inM(s,st.month);
     const regHTML=Object.keys(bySido).sort((a,b)=>bySido[b].length-bySido[a].length||a.localeCompare(b,'ko')).map(sd=>
       `<div class="sdh">${sd} · ${bySido[sd].length}곳</div>`+bySido[sd].sort((a,b)=>gsp[b].get(st.sp).size-gsp[a].get(st.sp).size||gname(a).localeCompare(gname(b),'ko')).map(g=>{
         const ms=[...gsp[g].get(st.sp)].map(x=>MT[x]);
@@ -483,6 +492,7 @@ select,input[type=search]{font:inherit;font-size:14.5px;color:var(--fg);backgrou
       <div class="sci">${s[1]}</div>
       ${tags?`<div class="badges chips">${tags}</div>`:''}
       <div class="bigph"><div class="cells" aria-label="꽃 시기 ${per(s)}">${cells}</div><div class="ml">${Array.from({length:12},(_,i)=>`<span>${i+1}</span>`).join('')}</div></div>
+      <span class="state ${onNow?'on':'off'}">${st.month}월 · ${onNow?'꽃 피는 중':'꽃 시기 아님'}</span>
       <div class="pstat"><span><b>${per(s)}</b> 꽃</span><span><b>${regs.length}</b>개 시·군·구</span><span><b>${places}</b>곳 산·장소</span></div>
       ${s[8]&&s[8]!=='nan'?`<div class="hintline">크기 · ${esc(s[8])}</div>`:''}
     </div>
