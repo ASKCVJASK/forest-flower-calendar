@@ -44,6 +44,7 @@
   --c1:#3A2330; --c2:#6A2C4A; --c3:#9E3A69; --c4:#D3558F; --c5:#F59AC2;
   --tip-bg:#E3EBE4; --tip-fg:#0F1511; color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
 button{font:inherit;color:inherit}
@@ -157,6 +158,40 @@ select,input[type=search]{font:inherit;font-size:14.5px;color:var(--fg);backgrou
 .foot h3{margin:0 0 3px;font-size:12.5px;color:var(--fg);font-weight:700}
 .foot p{margin:0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+:root{--g1:#BFD8C4;--g2:#6FA07B;--g3:#2E5D3A}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--g1:#2B4A34;--g2:#4E8C5E;--g3:#A3DAAF}}
+:root[data-theme="dark"]{--g1:#2B4A34;--g2:#4E8C5E;--g3:#A3DAAF}
+.rg.g1{fill:var(--g1)}.rg.g2{fill:var(--g2)}.rg.g3{fill:var(--g3)}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border-radius:11px;padding:3px;gap:3px}
+.tab{border:0;background:transparent;border-radius:8px;padding:8px 0;cursor:pointer;font-size:14px;color:var(--muted);
+  transition:background .2s var(--ease-out),color .2s,transform .16s var(--ease-out)}
+.tab:active{transform:scale(.97)}
+.tab[aria-selected="true"]{background:var(--paper);color:var(--fg);font-weight:700;box-shadow:0 1px 2px color-mix(in srgb,var(--fg) 14%,transparent)}
+.view{display:grid;gap:14px;align-content:start;min-width:0}
+.pcard{display:grid;gap:10px}
+.pcard .sci{font-style:italic;font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.back{justify-self:start;border:0;background:none;padding:0;color:var(--moss);cursor:pointer;font-size:13px}
+.back:hover{text-decoration:underline;text-underline-offset:3px}
+.pname{margin:0;font-family:var(--f-display);font-size:clamp(26px,3vw,32px);line-height:1.15}
+.pname small{font-family:var(--f-body);font-size:13px;font-weight:400;color:var(--muted);margin-left:6px}
+.bigph{display:grid;gap:4px}
+.bigph .cells{display:grid;grid-template-columns:repeat(12,1fr);gap:3px}
+.bigph .cells i{height:16px;border-radius:3px;background:var(--moss-soft)}
+.bigph .cells i.on{background:var(--petal)}
+.bigph .ml{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;font-family:var(--f-mono);font-size:10px;color:var(--muted);text-align:center}
+.pstat{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px}
+.pstat b{font-family:var(--f-mono);font-weight:500;font-size:16px;margin-right:2px}
+.sdh{font-size:12px;color:var(--muted);letter-spacing:.02em;padding:10px 4px 4px;border-bottom:1px solid var(--line)}
+.rgi{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:baseline;padding:9px 4px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;cursor:pointer;width:100%;
+  transition:background .18s var(--ease-out)}
+.rgi:hover{background:var(--bg)}
+.rgi[aria-pressed="true"]{background:var(--moss-soft)}
+.rgi .rn{font-weight:500}
+.rgi .rc{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.rgi .rm{grid-column:1/-1;font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.hintline{font-size:12.5px;color:var(--muted)}
+.mo.bloom .br{background:var(--petal)}
+.mo.bloom .lb{color:var(--fg)}
 </style>
 
 </head>
@@ -176,7 +211,7 @@ select,input[type=search]{font:inherit;font-size:14.5px;color:var(--fg);backgrou
   </section>
 
   <section class="mapcard" aria-label="시군구 지도">
-    <svg id="map" role="img" aria-label="시군구별로 꽃 피는 식물 수를 색으로 나타낸 대한민국 지도">
+    <svg id="map" role="img" aria-label="시군구별 식물 기록을 색으로 나타낸 대한민국 지도">
       <defs><pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="var(--nodata)"/><line class="hatchline" x1="0" y1="0" x2="0" y2="5"/></pattern></defs>
       <g id="rgs"></g><path class="mesh" id="mesh"/><path class="sel" id="selPath"/>
     </svg>
@@ -186,23 +221,31 @@ select,input[type=search]{font:inherit;font-size:14.5px;color:var(--fg);backgrou
   </section>
 
   <section class="panel" aria-live="polite">
-    <div class="ph"><span class="where" id="where"></span><h2 id="ptitle"></h2></div>
-    <div class="row2">
+    <div class="tabs" role="tablist" aria-label="보기 방식">
+      <button class="tab" role="tab" id="tabMonth" data-mode="month">달별 꽃 지도</button>
+      <button class="tab" role="tab" id="tabPlant" data-mode="plant">식물로 찾기</button>
+    </div>
+
+    <div class="view" id="monthView">
+      <div class="ph"><span class="where" id="where"></span><h2 id="ptitle"></h2></div>
       <label class="lab" for="region">지역<select id="region"></select></label>
-      <label class="lab" for="q">이름으로 찾기<input id="q" type="search" placeholder="예: 진달래, 제비꽃"></label>
+      <div class="chips" id="mtChips" aria-label="산·장소"></div>
+      <div class="chips" id="fChips" role="group" aria-label="걸러 보기">
+        <button class="chip" data-f="all" aria-pressed="true">전체</button>
+        <button class="chip" data-f="start" aria-pressed="false">이달 피기 시작</button>
+        <button class="chip" data-f="tree" aria-pressed="false">나무·덩굴</button>
+        <button class="chip" data-f="pro" aria-pressed="false">보호식물</button>
+        <button class="chip" data-f="end" aria-pressed="false">한국 특산</button>
+      </div>
+      <div id="notice"></div>
+      <div class="list" id="list"></div>
+      <button class="more" id="more" hidden>더 보기</button>
     </div>
-    <div class="chips" id="mtChips" aria-label="산·장소"></div>
-    <div class="chips" id="fChips" role="group" aria-label="보기">
-      <button class="chip" data-f="all" aria-pressed="true">전체</button>
-      <button class="chip" data-f="start" aria-pressed="false">이달 피기 시작</button>
-      <button class="chip" data-f="tree" aria-pressed="false">나무·덩굴</button>
-      <button class="chip" data-f="pro" aria-pressed="false">보호식물</button>
-      <button class="chip" data-f="end" aria-pressed="false">한국 특산</button>
+
+    <div class="view" id="plantView" hidden>
+      <label class="lab" for="pq">식물 이름<input id="pq" type="search" placeholder="예: 진달래, 산딸기, 마가목" autocomplete="off"></label>
+      <div id="pBody" class="view"></div>
     </div>
-    <div id="notice"></div>
-    <div id="spBanner"></div>
-    <div class="list" id="list"></div>
-    <button class="more" id="more" hidden>더 보기</button>
   </section>
 
   <footer class="foot">
@@ -225,11 +268,12 @@ select,input[type=search]{font:inherit;font-size:14.5px;color:var(--fg);backgrou
   const BINS=[1,10,25,50,100];
   const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const inM=(s,m)=>s[3]<=m&&m<=s[4];
+  const esc=s=>String(s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  const per=s=>s[3]===s[4]?`${s[3]}월`:`${s[3]}~${s[4]}월`;
 
-  // 지역(시군구 그룹)별 종 → 장소 모음
+  // ---------- data ----------
   const G={}; M.groups.forEach(g=>G[g.id]=g);
-  const gsp={};           // gid -> Map(j -> Set(mt))
-  const natSp=new Map();  // 전국
+  const gsp={}, natSp=new Map();
   for(const sd in D.regions) for(const sg in D.regions[sd]){
     const gid=M.keymap[sd+'|'+sg];
     for(const [j,ms] of D.regions[sd][sg]){
@@ -239,14 +283,15 @@ select,input[type=search]{font:inherit;font-size:14.5px;color:var(--fg);backgrou
       if(!mp.has(j)) mp.set(j,new Set()); ms.forEach(x=>mp.get(j).add(x));
     }
   }
-  // 지역별 월별 개화 종 수
   const gcount={};
-  for(const gid in gsp){ const c=Array(13).fill(0); for(const j of gsp[gid].keys()){const s=SP[j]; for(let m=s[3];m<=s[4];m++) c[m]++;} gcount[gid]=c; }
+  for(const gid in gsp){const c=Array(13).fill(0); for(const j of gsp[gid].keys()){const s=SP[j]; for(let m=s[3];m<=s[4];m++) c[m]++;} gcount[gid]=c;}
   const natCount=Array(13).fill(0); for(const j of natSp.keys()){const s=SP[j]; for(let m=s[3];m<=s[4];m++) natCount[m]++;}
+  const spRegions=j=>Object.keys(gsp).filter(g=>gsp[g].has(j));
+  const regionCount=new Map(); for(const gid in gsp) for(const j of gsp[gid].keys()) regionCount.set(j,(regionCount.get(j)||0)+1);
 
-  const st={gid:'',mt:'',month:NOW,f:'all',q:'',shown:PAGE,sp:-1,open:-1};
+  const st={mode:'month',gid:'',mt:'',month:NOW,f:'all',shown:PAGE,sp:-1,pq:''};
   let autoMoved=false;
-  if(natCount[NOW]<40){ for(let k=1;k<12;k++){const m=(NOW+k-1)%12+1; if(natCount[m]>=40){st.month=m; autoMoved=true; break;}} }
+  if(natCount[NOW]<40){for(let k=1;k<12;k++){const m=(NOW+k-1)%12+1; if(natCount[m]>=40){st.month=m; autoMoved=true; break;}}}
 
   // ---------- map ----------
   const svg=$('map'), rgs=$('rgs');
@@ -257,91 +302,112 @@ select,input[type=search]{font:inherit;font-size:14.5px;color:var(--fg);backgrou
   M.groups.forEach(g=>{
     const p=document.createElementNS(NS,'path'); p.setAttribute('d',g.d); p.dataset.id=g.id;
     p.setAttribute('class','rg'+(gsp[g.id]?'':' nod'));
-    if(gsp[g.id]){ p.setAttribute('tabindex','0'); p.setAttribute('role','button'); p.setAttribute('aria-label',g.name); }
+    if(gsp[g.id]){p.setAttribute('tabindex','0'); p.setAttribute('role','button'); p.setAttribute('aria-label',g.name);}
     rgs.appendChild(p); pathEl[g.id]=p;
   });
-  function bin(n){let b=0; BINS.forEach((t,i)=>{if(n>=t)b=i+1}); return b;}
+  const bin=n=>{let b=0; BINS.forEach((t,i)=>{if(n>=t)b=i+1}); return b;};
+  const gbin=n=>n>=4?3:n>=2?2:n>=1?1:0;
+  const plantMode=()=>st.mode==='plant'&&st.sp>=0;
   function paintMap(){
-    const spSet = st.sp>=0 ? new Set(Object.keys(gsp).filter(g=>gsp[g].has(st.sp))) : null;
     for(const g of M.groups){
       const el=pathEl[g.id]; if(!gsp[g.id]) continue;
       let cls='rg';
-      if(spSet){ cls+= spSet.has(g.id)?' sp':' b0'; }
-      else { const b=bin(gcount[g.id][st.month]); cls+= b?' b'+b:''; }
-      if(st.gid && st.gid!==g.id && !spSet) cls+=' dim';
+      if(plantMode()){ const ms=gsp[g.id].get(st.sp); const b=ms?gbin(ms.size):0; if(b) cls+=' g'+b; }
+      else if(st.mode==='month'){ const b=bin(gcount[g.id][st.month]); if(b) cls+=' b'+b; if(st.gid&&st.gid!==g.id) cls+=' dim'; }
       el.setAttribute('class',cls);
     }
-    $('selPath').setAttribute('d', st.gid? G[st.gid].d : '');
-    renderLegend(!!spSet, spSet?spSet.size:0);
+    $('selPath').setAttribute('d',st.gid?G[st.gid].d:'');
+    renderLegend();
   }
-  function renderLegend(spMode,n){
+  function renderLegend(){
     const L=$('legend');
-    if(spMode){ L.innerHTML=`<span>‘${SP[st.sp][0]}’ 기록이 있는 시·군·구 <b style="color:var(--fg)">${n}곳</b></span><div class="sw"><span style="background:var(--moss)"></span></div>`; return; }
-    L.innerHTML=`<span>${st.month}월에 꽃 피는 식물 수 (종)</span><div class="sw">${[1,2,3,4,5].map(i=>`<span style="background:var(--c${i})"></span>`).join('')}</div><div class="tk">${BINS.map((b,i)=>`<span>${b}${i===4?'+':''}</span>`).join('')}</div>`;
+    if(plantMode()){
+      const n=spRegions(st.sp).length;
+      L.innerHTML=`<span>‘${SP[st.sp][0]}’ 기록된 시·군·구 <b style="color:var(--fg)">${n}곳</b></span><div class="sw">${[1,2,3].map(i=>`<span style="background:var(--g${i})"></span>`).join('')}</div><div class="tk"><span>장소1</span><span>2~3</span><span>4+</span></div>`;
+    } else if(st.mode==='plant'){
+      L.innerHTML='<span>식물을 고르면 자라는 곳이 표시돼요</span>';
+    } else {
+      L.innerHTML=`<span>${st.month}월에 꽃 피는 식물 수 (종)</span><div class="sw">${[1,2,3,4,5].map(i=>`<span style="background:var(--c${i})"></span>`).join('')}</div><div class="tk">${BINS.map((b,i)=>`<span>${b}${i===4?'+':''}</span>`).join('')}</div>`;
+    }
   }
   function animateVB(to){
-    const from=vb.slice(), t0=performance.now(), dur=RM?0:520;
-    const ease=t=>1-Math.pow(1-t,4);
-    function step(now){ const t=dur?Math.min(1,(now-t0)/dur):1, e=ease(t);
-      vb=from.map((v,i)=>v+(to[i]-v)*e); svg.setAttribute('viewBox',vb.join(' '));
-      if(t<1) requestAnimationFrame(step); }
+    const from=vb.slice(), t0=performance.now(), dur=RM?0:520, ease=t=>1-Math.pow(1-t,4);
+    function step(now){const t=dur?Math.min(1,(now-t0)/dur):1, e=ease(t); vb=from.map((v,i)=>v+(to[i]-v)*e); svg.setAttribute('viewBox',vb.join(' ')); if(t<1) requestAnimationFrame(step);}
     requestAnimationFrame(step);
   }
   function zoomTo(gid){
-    if(!gid){ animateVB(VB0); return; }
-    const b=pathEl[gid].getBBox();
-    const pad=Math.max(b.width,b.height)*2.6+40;
+    if(!gid){animateVB(VB0);return;}
+    const b=pathEl[gid].getBBox(), pad=Math.max(b.width,b.height)*2.6+40;
     let w=b.width+pad, h=b.height+pad; const ar=VB0[2]/VB0[3];
     if(w/h>ar) h=w/ar; else w=h*ar;
-    animateVB([b.x+b.width/2-w/2, b.y+b.height/2-h/2, w, h]);
+    animateVB([b.x+b.width/2-w/2,b.y+b.height/2-h/2,w,h]);
   }
-  // tooltip
   const tip=$('tip'), card=svg.parentElement;
   rgs.addEventListener('pointermove',e=>{
     const id=e.target.dataset&&e.target.dataset.id; if(!id||e.pointerType==='touch'){tip.classList.remove('on');return;}
-    const g=G[id], r=card.getBoundingClientRect();
-    let txt;
+    const g=G[id], r=card.getBoundingClientRect(); let txt;
     if(!gsp[id]) txt=`<b>${g.name}</b> · 분포 기록 없음`;
-    else if(st.sp>=0) txt=`<b>${g.name}</b> · ${gsp[id].has(st.sp)?'기록 있음':'기록 없음'}`;
+    else if(plantMode()){const ms=gsp[id].get(st.sp); txt=`<b>${g.name}</b> · ${ms?`장소 ${ms.size}곳에서 기록`:'기록 없음'}`;}
+    else if(st.mode==='plant') txt=`<b>${g.name}</b>`;
     else txt=`<b>${g.name}</b> · ${st.month}월 꽃 ${gcount[id][st.month]}종`;
     tip.innerHTML=txt; tip.style.left=(e.clientX-r.left)+'px'; tip.style.top=(e.clientY-r.top)+'px'; tip.classList.add('on');
   });
   rgs.addEventListener('pointerleave',()=>tip.classList.remove('on'));
-  function pick(id){ if(!gsp[id]) return; selectRegion(st.gid===id?'':id); }
+  function pick(id){
+    if(!gsp[id]) return;
+    if(st.mode==='plant'){ if(st.sp<0||!gsp[id].has(st.sp)) return; st.gid=st.gid===id?'':id; zoomTo(st.gid); render(); return; }
+    selectRegion(st.gid===id?'':id);
+  }
   rgs.addEventListener('click',e=>{const id=e.target.dataset&&e.target.dataset.id; if(id) pick(id);});
   rgs.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.dataset.id){e.preventDefault();pick(e.target.dataset.id);}});
 
   // ---------- months ----------
   function renderMonths(){
-    const c = st.gid? gcount[st.gid] : natCount; const max=Math.max(1,...c.slice(1));
+    const c=st.gid&&st.mode==='month'?gcount[st.gid]:natCount, max=Math.max(1,...c.slice(1));
+    const s=plantMode()?SP[st.sp]:null;
     $('months').innerHTML=Array.from({length:12},(_,i)=>{const m=i+1;
-      return `<button class="mo${m===NOW?' now':''}" data-m="${m}" aria-pressed="${m===st.month}" aria-label="${m}월, ${c[m]}종"><span class="bx"><span class="br" style="height:${Math.max(2,c[m]/max*34)}px"></span></span><span class="lb">${m}월</span></button>`}).join('');
+      const bloom=s&&inM(s,m), pressed=!s&&m===st.month;
+      const h=s?(bloom?34:4):Math.max(2,c[m]/max*34);
+      return `<button class="mo${m===NOW?' now':''}${bloom?' bloom':''}" data-m="${m}" aria-pressed="${pressed}" aria-label="${m}월${s?(bloom?', 꽃 피는 달':''):`, ${c[m]}종`}"><span class="bx"><span class="br" style="height:${h}px"></span></span><span class="lb">${m}월</span></button>`}).join('');
   }
-  $('months').addEventListener('click',e=>{const b=e.target.closest('.mo'); if(!b) return; stopPlay(); setMonth(+b.dataset.m);});
-  function setMonth(m){ st.month=m; st.shown=PAGE; autoMoved=false; render(); }
+  $('months').addEventListener('click',e=>{const b=e.target.closest('.mo'); if(!b) return; stopPlay(); if(st.mode!=='month') setMode('month',true); setMonth(+b.dataset.m);});
+  function setMonth(m){st.month=m; st.shown=PAGE; autoMoved=false; render();}
   let timer=null;
-  function stopPlay(){ if(timer){clearInterval(timer); timer=null;} $('play').setAttribute('aria-pressed','false'); $('playLabel').textContent='1년 재생'; $('playIcon').setAttribute('d','M4 2.5v11l9-5.5z'); }
+  function stopPlay(){if(timer){clearInterval(timer);timer=null;} $('play').setAttribute('aria-pressed','false'); $('playLabel').textContent='1년 재생'; $('playIcon').setAttribute('d','M4 2.5v11l9-5.5z');}
   $('play').onclick=()=>{
     if(timer){stopPlay();return;}
-    if(st.sp>=0){ st.sp=-1; st.open=-1; }
+    if(st.mode!=='month') setMode('month',true);
     $('play').setAttribute('aria-pressed','true'); $('playLabel').textContent='멈춤'; $('playIcon').setAttribute('d','M3.5 2.5h3v11h-3zM9.5 2.5h3v11h-3z');
     setMonth(st.month>=12?1:st.month+1);
-    timer=setInterval(()=>{ if(st.month>=12){stopPlay();return;} setMonth(st.month+1); }, RM?1400:950);
+    timer=setInterval(()=>{if(st.month>=12){stopPlay();return;} setMonth(st.month+1);},RM?1400:950);
   };
 
-  // ---------- panel ----------
+  // ---------- mode ----------
+  function setMode(mode,silent){
+    st.mode=mode; st.gid=''; st.mt=''; st.shown=PAGE;
+    if(mode==='month'){ st.sp=-1; $('region').value=''; }
+    zoomTo('');
+    $('tabMonth').setAttribute('aria-selected',String(mode==='month')); $('tabPlant').setAttribute('aria-selected',String(mode==='plant'));
+    $('monthView').hidden=mode!=='month'; $('plantView').hidden=mode!=='plant';
+    if(!silent) render();
+  }
+  $('tabMonth').onclick=()=>{stopPlay(); setMode('month');};
+  $('tabPlant').onclick=()=>{stopPlay(); setMode('plant'); setTimeout(()=>{ if(st.sp<0) $('pq').focus(); },0);};
+  function openPlant(j){ stopPlay(); setMode('plant',true); st.sp=j; render(); window.scrollTo({top:0,behavior:RM?'auto':'smooth'}); }
+
+  // ---------- month view ----------
   const gname=gid=>G[gid].name;
-  function selectRegion(gid){ st.gid=gid; st.mt=''; st.shown=PAGE; st.open=-1; zoomTo(gid); $('region').value=gid; render(); }
+  function selectRegion(gid){st.gid=gid; st.mt=''; st.shown=PAGE; zoomTo(gid); $('region').value=gid; render();}
   function fillRegion(){
     const bySido={}; Object.keys(gsp).forEach(gid=>{const g=G[gid]; (bySido[g.sido]=bySido[g.sido]||[]).push(gid);});
-    const sel=$('region'); sel.innerHTML='<option value="">전국</option>'+Object.keys(bySido).sort((a,b)=>a.localeCompare(b,'ko')).map(sd=>
+    $('region').innerHTML='<option value="">전국</option>'+Object.keys(bySido).sort((a,b)=>a.localeCompare(b,'ko')).map(sd=>
       `<optgroup label="${sd}">${bySido[sd].sort((a,b)=>gname(a).localeCompare(gname(b),'ko')).map(g=>`<option value="${g}">${gname(g)}</option>`).join('')}</optgroup>`).join('');
-    sel.onchange=e=>selectRegion(e.target.value);
+    $('region').onchange=e=>selectRegion(e.target.value);
   }
-  function pool(){ const P=st.gid?gsp[st.gid]:natSp; if(st.mt==='') return P; const out=new Map(); for(const [j,ms] of P) if(ms.has(+st.mt)) out.set(j,ms); return out; }
+  function pool(){const P=st.gid?gsp[st.gid]:natSp; if(st.mt==='') return P; const out=new Map(); for(const [j,ms] of P) if(ms.has(+st.mt)) out.set(j,ms); return out;}
   function renderMt(){
     const el=$('mtChips');
-    if(!st.gid){ el.innerHTML=''; el.hidden=true; return; }
+    if(!st.gid){el.innerHTML=''; el.hidden=true; return;}
     const cnt=new Map(); for(const [j,ms] of gsp[st.gid]) if(inM(SP[j],st.month)) ms.forEach(x=>cnt.set(x,(cnt.get(x)||0)+1));
     const all=new Set(); for(const ms of gsp[st.gid].values()) ms.forEach(x=>all.add(x));
     const arr=[...all].sort((a,b)=>(cnt.get(b)||0)-(cnt.get(a)||0)||MT[a].localeCompare(MT[b],'ko'));
@@ -351,73 +417,109 @@ select,input[type=search]{font:inherit;font-size:14.5px;color:var(--fg);backgrou
   $('mtChips').addEventListener('click',e=>{const b=e.target.closest('.chip'); if(!b) return; st.mt=b.dataset.mt; st.shown=PAGE; render();});
   $('fChips').addEventListener('click',e=>{const b=e.target.closest('.chip'); if(!b) return; st.f=b.dataset.f; st.shown=PAGE;
     document.querySelectorAll('#fChips .chip').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); render();});
-  $('q').oninput=e=>{st.q=e.target.value.trim(); st.shown=PAGE; render();};
   $('more').onclick=()=>{st.shown+=PAGE; renderList();};
 
-  function rowHTML(j,ms){
-    const s=SP[j], m=st.month, per=s[3]===s[4]?`${s[3]}월`:`${s[3]}~${s[4]}월`;
-    const cells=Array.from({length:12},(_,i)=>{const k=i+1;return `<i class="${inM(s,k)?'on':''}${k===m?' cur':''}"></i>`}).join('');
+  function rowHTML(j,hl){
+    const s=SP[j];
+    const cells=Array.from({length:12},(_,i)=>{const k=i+1; return `<i class="${inM(s,k)?'on':''}${k===hl?' cur':''}"></i>`}).join('');
     const tags=[s[7]>=200?'<span class="tag t-tree">나무·덩굴</span>':'',s[5]?'<span class="tag t-pro">보호식물</span>':'',s[6]?'<span class="tag t-end">한국 특산</span>':''].join('');
-    const open=st.open===j;
-    let det='';
-    if(open){ const pl=[...ms].map(x=>MT[x]); const regions=Object.keys(gsp).filter(g=>gsp[g].has(j)).length;
-      det=`<div class="det"><span><span class="k">크기</span> ${s[8]&&s[8]!=='nan'?s[8]:'정보 없음'}</span><span><span class="k">${st.gid?gname(st.gid)+'에서 기록된 곳':'기록된 곳'}</span> ${pl.slice(0,8).join(', ')}${pl.length>8?` 외 ${pl.length-8}곳`:''}</span><span><span class="k">전국</span> ${regions}개 시·군·구에서 기록 · 지도에 초록색으로 표시</span></div>`; }
-    return `<button class="it" data-j="${j}" aria-pressed="${open}" aria-expanded="${open}">
+    return `<button class="it" data-j="${j}" aria-label="${s[0]} — 자라는 곳 지도로 보기">
       <span class="nm">${s[0]}<small>${s[2]}</small></span>
-      <span class="ph12"><span class="cells">${cells}</span><span class="cap">꽃 ${per}</span></span>
-      <span class="sci">${s[1]}</span>
-      ${tags?`<span class="tags">${tags}</span>`:''}${det}</button>`;
+      <span class="ph12"><span class="cells">${cells}</span><span class="cap">꽃 ${per(s)}</span></span>
+      <span class="sci">${s[1]}</span>${tags?`<span class="tags">${tags}</span>`:''}</button>`;
   }
   let rows=[];
   function computeRows(){
-    const P=pool(), q=st.q;
+    const P=pool();
     rows=[...P.entries()].filter(([j])=>{const s=SP[j];
-      if(q) return s[0].includes(q)||s[2].includes(q);
       if(!inM(s,st.month)) return false;
       if(st.f==='start'&&s[3]!==st.month) return false;
       if(st.f==='tree'&&s[7]<200) return false;
       if(st.f==='pro'&&!s[5]) return false;
       if(st.f==='end'&&!s[6]) return false;
       return true;});
-    const qs=j=>{const n=SP[j][0]; return n===q?0:n.startsWith(q)?1:n.includes(q)?2:3;};
-    if(q) rows.sort((a,b)=>qs(a[0])-qs(b[0])||b[1].size-a[1].size);
-    else rows.sort((a,b)=>(SP[b[0]][3]===st.month)-(SP[a[0]][3]===st.month)||b[1].size-a[1].size||SP[a[0]][0].localeCompare(SP[b[0]][0],'ko'));
+    rows.sort((a,b)=>(SP[b[0]][3]===st.month)-(SP[a[0]][3]===st.month)||b[1].size-a[1].size||SP[a[0]][0].localeCompare(SP[b[0]][0],'ko'));
   }
   function renderList(){
     const L=$('list');
     if(!rows.length){
-      let next=0; if(!st.q){for(let k=1;k<=12&&!next;k++){const mm=(st.month+k-1)%12+1; for(const j of pool().keys()) if(inM(SP[j],mm)){next=mm;break;}}}
-      L.innerHTML=`<div class="empty">${st.q?'이 지역 기록에서 그 이름을 찾지 못했어요. 지역을 ‘전국’으로 넓혀 보세요.':`${st.month}월은 숲이 쉬는 달이라 이 조건에 맞는 꽃 기록이 없어요.`}${next?`<button class="more" id="jump">${next}월 꽃 보기</button>`:''}</div>`;
+      let next=0; for(let k=1;k<=12&&!next;k++){const mm=(st.month+k-1)%12+1; for(const j of pool().keys()) if(inM(SP[j],mm)){next=mm;break;}}
+      L.innerHTML=`<div class="empty">${st.month}월은 숲이 쉬는 달이라 이 조건에 맞는 꽃 기록이 없어요.${next?`<button class="more" id="jump">${next}월 꽃 보기</button>`:''}</div>`;
       const jb=$('jump'); if(jb) jb.onclick=()=>setMonth(next);
-    } else L.innerHTML=rows.slice(0,st.shown).map(([j,ms])=>rowHTML(j,ms)).join('');
+    } else L.innerHTML=rows.slice(0,st.shown).map(([j])=>rowHTML(j,st.month)).join('');
     $('more').hidden=rows.length<=st.shown;
     $('more').textContent=`더 보기 · ${rows.length-Math.min(st.shown,rows.length)}종 남음`;
   }
-  $('list').addEventListener('click',e=>{const b=e.target.closest('.it'); if(!b) return; const j=+b.dataset.j;
-    stopPlay();
-    if(st.open===j){st.open=-1; st.sp=-1;} else {st.open=j; st.sp=j;}
-    renderList(); renderBanner(); paintMap();});
-  function renderBanner(){
-    const el=$('spBanner');
-    if(st.sp<0){el.innerHTML='';return;}
-    el.innerHTML=`<div class="spbanner"><span>지도: ‘${SP[st.sp][0]}’이(가) 기록된 곳</span><button id="spOff">꽃 지도로 돌아가기</button></div>`;
-    $('spOff').onclick=()=>{st.sp=-1; st.open=-1; render();};
+  $('list').addEventListener('click',e=>{const b=e.target.closest('.it'); if(b) openPlant(+b.dataset.j);});
+
+  // ---------- plant view ----------
+  const allSp=[...natSp.keys()];
+  function searchPlants(q){
+    const qs=j=>{const n=SP[j][0]; return n===q?0:n.startsWith(q)?1:n.includes(q)?2:SP[j][1].toLowerCase().includes(q.toLowerCase())?3:SP[j][2].includes(q)?4:9;};
+    return allSp.map(j=>[j,qs(j)]).filter(x=>x[1]<9).sort((a,b)=>a[1]-b[1]||(regionCount.get(b[0])||0)-(regionCount.get(a[0])||0)).map(x=>x[0]);
   }
+  function renderPlant(){
+    const B=$('pBody');
+    if(st.sp<0){
+      const q=st.pq;
+      let list, head;
+      if(q){ list=searchPlants(q); head=list.length?`‘${esc(q)}’ 검색 결과 ${list.length}종`:`‘${esc(q)}’에 맞는 식물이 기록에 없어요. 다른 이름으로 찾아보세요.`; }
+      else { list=allSp.slice().sort((a,b)=>(regionCount.get(b)||0)-(regionCount.get(a)||0)); head='전국에서 가장 많이 기록된 식물이에요. 이름을 누르면 자라는 곳이 지도에 나와요.'; }
+      B.innerHTML=`<p class="hintline">${head}</p><div class="list">${list.slice(0,30).map(j=>rowHTML(j,0)).join('')}</div>`;
+      return;
+    }
+    const s=SP[st.sp], regs=spRegions(st.sp);
+    const places=natSp.get(st.sp)?natSp.get(st.sp).size:0;
+    const bySido={}; regs.forEach(g=>(bySido[G[g].sido]=bySido[G[g].sido]||[]).push(g));
+    const tags=[s[7]>=200?'<span class="tag t-tree">나무·덩굴</span>':'',s[5]?'<span class="tag t-pro">보호식물</span>':'',s[6]?'<span class="tag t-end">한국 특산</span>':''].join('');
+    const cells=Array.from({length:12},(_,i)=>`<i class="${inM(s,i+1)?'on':''}"></i>`).join('');
+    const regHTML=Object.keys(bySido).sort((a,b)=>bySido[b].length-bySido[a].length||a.localeCompare(b,'ko')).map(sd=>
+      `<div class="sdh">${sd} · ${bySido[sd].length}곳</div>`+bySido[sd].sort((a,b)=>gsp[b].get(st.sp).size-gsp[a].get(st.sp).size||gname(a).localeCompare(gname(b),'ko')).map(g=>{
+        const ms=[...gsp[g].get(st.sp)].map(x=>MT[x]);
+        return `<button class="rgi" data-g="${g}" aria-pressed="${st.gid===g}"><span class="rn">${gname(g)}</span><span class="rc">장소 ${ms.length}</span><span class="rm">${ms.slice(0,6).join(', ')}${ms.length>6?` 외 ${ms.length-6}곳`:''}</span></button>`;}).join('')).join('');
+    B.innerHTML=`<div class="pcard">
+      <button class="back" id="back">← 다른 식물 찾기</button>
+      <h2 class="pname">${s[0]}<small>${s[2]}</small></h2>
+      <div class="sci">${s[1]}</div>
+      ${tags?`<div class="badges chips">${tags}</div>`:''}
+      <div class="bigph"><div class="cells" aria-label="꽃 시기 ${per(s)}">${cells}</div><div class="ml">${Array.from({length:12},(_,i)=>`<span>${i+1}</span>`).join('')}</div></div>
+      <div class="pstat"><span><b>${per(s)}</b> 꽃</span><span><b>${regs.length}</b>개 시·군·구</span><span><b>${places}</b>곳 산·장소</span></div>
+      ${s[8]&&s[8]!=='nan'?`<div class="hintline">크기 · ${esc(s[8])}</div>`:''}
+    </div>
+    <div>${regHTML||'<p class="hintline">지도에 표시할 수 있는 시·군·구 기록이 없어요.</p>'}</div>`;
+    $('back').onclick=()=>{st.sp=-1; st.gid=''; zoomTo(''); render(); setTimeout(()=>$('pq').focus(),0);};
+  }
+  $('pBody').addEventListener('click',e=>{
+    const it=e.target.closest('.it'); if(it){ st.sp=+it.dataset.j; st.gid=''; zoomTo(''); render(); return; }
+    const r=e.target.closest('.rgi'); if(r){ st.gid=st.gid===r.dataset.g?'':r.dataset.g; zoomTo(st.gid); render(); if(st.gid && matchMedia('(max-width:860px)').matches) $('map').scrollIntoView({behavior:RM?'auto':'smooth',block:'center'}); }
+  });
+  $('pq').addEventListener('input',e=>{st.pq=e.target.value.trim(); st.sp=-1; st.gid=''; zoomTo(''); render();});
+  $('pq').addEventListener('keydown',e=>{ if(e.key==='Enter'&&st.pq){const r=searchPlants(st.pq); if(r.length){st.sp=r[0]; render();}} });
+
+  // ---------- head ----------
   function renderHead(){
+    const c=$('crumb');
+    if(st.mode==='plant'){
+      c.innerHTML= st.sp<0?'<b>식물로 찾기</b><span class="sep">·</span><span>이름을 검색하세요</span>'
+        : `<b>${SP[st.sp][0]}</b>${st.gid?`<span class="sep">›</span><span>${gname(st.gid)}</span>`:'<span class="sep">·</span><span>자라는 곳</span>'}`;
+      return;
+    }
     const place=st.gid?gname(st.gid):'전국', mt=st.mt!==''?` ${MT[+st.mt]}`:'';
     $('where').textContent=st.gid?`${G[st.gid].sido} › ${place}${mt}`:'전국 · 지도에서 시·군·구를 눌러 보세요';
-    $('ptitle').innerHTML=st.q?`‘${st.q.replace(/[<>&"]/g,'')}’ 찾은 식물 <b>${rows.length}종</b>`:`${place}${mt}, <b>${st.month}월</b>에 꽃 피는 식물 <b>${rows.length}종</b>`;
-    const c=$('crumb');
+    $('ptitle').innerHTML=`${place}${mt}, <b>${st.month}월</b>에 꽃 피는 식물 <b>${rows.length}종</b>`;
     c.innerHTML=st.gid?`<button id="toNat">전국</button><span class="sep">›</span><span>${G[st.gid].sido}</span><span class="sep">›</span><b>${place}</b>`:`<b>전국</b><span class="sep">·</span><span>${st.month}월</span>`;
     const tn=$('toNat'); if(tn) tn.onclick=()=>selectRegion('');
     $('notice').innerHTML=autoMoved?`<div class="notice">${NOW}월은 꽃 기록이 거의 없어서, 꽃이 다시 피기 시작하는 ${st.month}월을 먼저 보여드려요. 위에서 다른 달을 고를 수 있어요.</div>`:'';
   }
-  function render(){ computeRows(); renderMonths(); renderMt(); renderHead(); renderList(); renderBanner(); paintMap(); }
+  function render(){
+    if(st.mode==='month'){computeRows(); renderMt(); renderList();} else renderPlant();
+    renderMonths(); renderHead(); paintMap();
+  }
 
   const S=D.stats;
   $('facts').innerHTML=`<span><b>${S.speciesUsed.toLocaleString()}</b>종</span><span><b>${Object.keys(gsp).length}</b>개 시·군·구</span><span><b>${S.mountains}</b>곳 산·장소</span>`;
   $('howJoin').textContent=`분포 기록의 국명(맞지 않으면 학명)으로 표준식물종정보와 연결했어요. 분포 기록 ${S.distRows.toLocaleString()}건 중 ${S.matchedRows.toLocaleString()}건(${Math.round(S.matchedRows/S.distRows*100)}%)이 연결됐어요. 2014년 이후 바뀐 행정구역(청주·청원 통합, 미추홀구 등)은 지금 이름에 맞춰 묶었어요.`;
-  fillRegion(); render();
+  fillRegion(); setMode('month',true); render();
 })();
 </script>
 
